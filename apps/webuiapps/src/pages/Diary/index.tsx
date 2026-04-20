@@ -1018,14 +1018,21 @@ const Diary: React.FC = () => {
           content: entry.content || '',
           date: entry.date || getToday(),
         };
+        // Save to local first, then ensure cloud sync completes before returning
         fsSaveFile(filePath, normalized);
+        try {
+          await syncToCloud(filePath, normalized);
+        } catch (error) {
+          console.error('[Diary] Failed to sync entry to cloud:', filePath, error);
+          // Continue anyway - local save succeeded
+        }
         return normalized;
       } catch (error) {
         console.error('[Diary] syncEntryFromCloud failed:', filePath, error);
         return null;
       }
     },
-    [fsSaveFile],
+    [fsSaveFile, syncToCloud],
   );
 
   // --- Agent Action Listener ---
