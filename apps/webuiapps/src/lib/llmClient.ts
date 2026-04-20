@@ -283,6 +283,7 @@ async function chatAnthropic(
 
   const anthropicMessages = nonSystemMessages.map((m) => {
     if (m.role === 'tool') {
+      logger.info('LLM', 'Formatting tool_result with tool_use_id:', m.tool_call_id);
       return {
         role: 'user' as const,
         content: [
@@ -339,6 +340,7 @@ async function chatAnthropic(
     model: config.model,
     messageCount: anthropicMessages.length,
     toolCount: anthropicTools.length,
+    messages: JSON.stringify(anthropicMessages).slice(0, 500),
   });
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -363,22 +365,43 @@ async function chatAnthropic(
   }
 
   const data = await res.json();
-  logger.info('LLM', 'Anthropic Response data:', JSON.stringify(data).slice(0, 500));
   let content = '';
   const toolCalls: ToolCall[] = [];
 
-  for (const block of data.content || []) {
-    if (block.type === 'text') {
-      content += block.text;
-    } else if (block.type === 'tool_use') {
+  // Check for OpenAI-format tool_calls first (some providers return this)
+  const openAiToolCalls = data.choices?.[0]?.message?.tool_calls;
+  if (openAiToolCalls?.length) {
+    logger.info('LLM', 'Found OpenAI-format tool_calls in response');
+    for (const tc of openAiToolCalls) {
       toolCalls.push({
-        id: block.id,
+        id: tc.id,
         type: 'function',
         function: {
-          name: block.name,
-          arguments: JSON.stringify(block.input),
+          name: tc.function.name,
+          arguments:
+            typeof tc.function.arguments === 'string'
+              ? tc.function.arguments
+              : JSON.stringify(tc.function.arguments),
         },
       });
+    }
+    content = data.choices[0].message.content || '';
+  } else {
+    // Anthropic format
+    for (const block of data.content || []) {
+      if (block.type === 'text') {
+        content += block.text;
+      } else if (block.type === 'tool_use') {
+        logger.info('LLM', 'Received tool_use block with id:', block.id, 'name:', block.name);
+        toolCalls.push({
+          id: block.id,
+          type: 'function',
+          function: {
+            name: block.name,
+            arguments: JSON.stringify(block.input),
+          },
+        });
+      }
     }
   }
 

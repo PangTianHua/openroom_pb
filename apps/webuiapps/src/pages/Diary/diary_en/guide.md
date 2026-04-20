@@ -19,14 +19,14 @@ Stores all diary entry data. Each entry is saved as an independent JSON file, na
 - On startup, the frontend reads all files from this directory to render the calendar and diary content
 - When the Agent creates a diary entry, it writes a new file directly
 - When a user creates or edits a diary entry, the frontend creates/updates the file and syncs to the cloud
-- Each date can have at most one entry; entries are browsed by date via the calendar navigator
+- Each date can have up to 255 entries; entries are browsed by date via the calendar navigator, with multiple entries shown as tabs
 
 #### Diary Entry File `{entryId}.json`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | id | string | Yes | Unique diary entry identifier, matches the filename (without `.json` extension) |
-| date | string | Yes | Date in YYYY-MM-DD format (e.g., `2026-02-12`), at most one entry per day |
+| date | string | Yes | Date in YYYY-MM-DD format (e.g., `2026-02-12`), up to 255 entries per day |
 | title | string | Yes | Diary title, can be an empty string |
 | content | string | Yes | Diary content, supports Markdown and special markup syntax, can be an empty string |
 | mood | string | No | Mood tag: `happy` / `sad` / `neutral` / `excited` / `tired` / `anxious` / `hopeful` / `angry` |

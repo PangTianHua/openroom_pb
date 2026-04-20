@@ -803,11 +803,16 @@ const Diary: React.FC = () => {
         if (!entry.date && entry.createdAt) {
           entry.date = toDateString(new Date(entry.createdAt));
         }
+        // Extract id from filename if entry doesn't have one
+        const fileId = entry.id || n.name.replace('.json', '') || generateId();
         return {
           ...entry,
+          id: fileId,
           title: entry.title || '',
           content: entry.content || '',
           date: entry.date || getToday(),
+          createdAt: entry.createdAt || Date.now(),
+          updatedAt: entry.updatedAt || Date.now(),
         };
       })
       .filter((e): e is DiaryEntry => e !== null && !!e.id);
@@ -1012,11 +1017,16 @@ const Diary: React.FC = () => {
             ? JSON.parse(result.content)
             : (result.content as DiaryEntry);
         if (!entry.date && entry.createdAt) entry.date = toDateString(new Date(entry.createdAt));
+        // Generate id from filename if entry doesn't have one
+        const fileId = entry.id || filePath.split('/').pop()?.replace('.json', '') || generateId();
         const normalized: DiaryEntry = {
           ...entry,
+          id: fileId,
           title: entry.title || '',
           content: entry.content || '',
           date: entry.date || getToday(),
+          createdAt: entry.createdAt || Date.now(),
+          updatedAt: entry.updatedAt || Date.now(),
         };
         // Save to local first, then ensure cloud sync completes before returning
         fsSaveFile(filePath, normalized);
